@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Europa Hauptstadt Ultimate</title>
+
+<style>
+:root{
+    --card-width: 700px;
+    --font-size: 18px;
+}
+
+body{
+    margin:0;
+    font-family: 'Segoe UI', sans-serif;
+    background: radial-gradient(circle at top,#1e3c72,#0f2027);
+    overflow:hidden;
+    color:white;
+}
+
+/* ===== Animated Background ===== */
+body::before{
+    content:"";
+    position:fixed;
+    width:200%;
+    height:200%;
+    background:
+        radial-gradient(white 1px, transparent 1px),
+        radial-gradient(white 1px, transparent 1px);
+    background-size: 60px 60px;
+    background-position: 0 0, 30px 30px;
+    animation: moveBg 60s linear infinite;
+    opacity:0.05;
+    z-index:-1;
+}
+
+@keyframes moveBg{
+    from{transform:translateY(0);}
+    to{transform:translateY(-500px);}
+}
+
+/* ===== Container ===== */
+.container{
+    width:var(--card-width);
+    margin:60px auto;
+    padding:40px;
+    border-radius:25px;
+    backdrop-filter: blur(25px);
+    background: rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.15);
+    box-shadow: 0 0 40px rgba(0,255,255,0.2),
+                0 0 80px rgba(0,0,0,0.6);
+    text-align:center;
+    animation: fadeIn 0.8s ease;
+}
+
+@keyframes fadeIn{
+    from{opacity:0; transform:translateY(20px);}
+    to{opacity:1; transform:translateY(0);}
+}
+
+.topbar{
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:20px;
+}
+
+.switch button{
+    padding:6px 12px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    background: rgba(255,255,255,0.15);
+    color:white;
+    transition:0.3s;
+}
+
+.switch button:hover{
+    box-shadow:0 0 15px cyan;
+    transform:scale(1.1);
+}
+
+/* ===== Question ===== */
+.question{
+    font-size:26px;
+    margin:25px 0;
+}
+
+/* ===== Answer Buttons ===== */
+.answers button{
+    display:block;
+    width:100%;
+    margin:12px 0;
+    padding:14px;
+    font-size:var(--font-size);
+    border-radius:15px;
+    border:1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.1);
+    color:white;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.answers button:hover{
+    background: rgba(255,255,255,0.2);
+    box-shadow:0 0 20px rgba(0,255,255,0.6);
+    transform:translateY(-3px);
+}
+
+.correct{
+    background: linear-gradient(45deg,#00c853,#69f0ae);
+    box-shadow:0 0 25px #00ff88;
+}
+
+.wrong{
+    background: linear-gradient(45deg,#d50000,#ff5252);
+    box-shadow:0 0 25px red;
+}
+
+/* ===== Result Text ===== */
+.result{
+    font-size:22px;
+    margin-top:20px;
+    height:30px;
+    font-weight:bold;
+    transition:0.3s;
+}
+
+/* ===== Stats ===== */
+.stats{
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:15px;
+    font-size:14px;
+    opacity:0.9;
+}
+
+/* ===== Restart Button ===== */
+.restart{
+    margin-top:20px;
+    padding:12px 25px;
+    border:none;
+    border-radius:12px;
+    cursor:pointer;
+    background:gold;
+    font-weight:bold;
+    transition:0.3s;
+}
+
+.restart:hover{
+    transform:scale(1.1);
+    box-shadow:0 0 20px gold;
+}
+
+/* Handy */
+.mobile{
+    --card-width:95%;
+    --font-size:20px;
+}
+</style>
+</head>
+<body>
+
+<div class="container" id="game">
+    <div class="topbar">
+        <div><strong>Europa Ultimate 🌍</strong></div>
+        <div class="switch">
+            <button onclick="setMode('pc')">💻 PC</button>
+            <button onclick="setMode('mobile')">📱 Handy</button>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div>⭐ Punkte: <span id="score">0</span></div>
+        <div>🔥 Serie: <span id="streak">0</span></div>
+        <div>🏆 Highscore: <span id="highscore">0</span></div>
+    </div>
+
+    <div class="question" id="question"></div>
+    <div class="answers" id="answers"></div>
+    <div class="result" id="result"></div>
+
+    <button class="restart" onclick="restart()" style="display:none;">Neu starten</button>
+</div>
+
+<script>
+const countries=[
+{n:"Albanien", c:"Tirana", w:["Durres","Vlora","Skopje"]},
+{n:"Andorra", c:"Andorra la Vella", w:["Encamp","Barcelona","Toulouse"]},
+{n:"Belarus", c:"Minsk", w:["Brest","Gomel","Vilnius"]},
+{n:"Belgien", c:"Brüssel", w:["Antwerpen","Gent","Amsterdam"]},
+{n:"Bosnien & Herzegowina", c:"Sarajevo", w:["Mostar","Banja Luka","Zagreb"]},
+{n:"Bulgarien", c:"Sofia", w:["Plowdiw","Varna","Bukarest"]},
+{n:"Dänemark", c:"Kopenhagen", w:["Aarhus","Odense","Stockholm"]},
+{n:"Deutschland", c:"Berlin", w:["Hamburg","München","Wien"]},
+{n:"Estland", c:"Tallinn", w:["Tartu","Riga","Helsinki"]},
+{n:"Finnland", c:"Helsinki", w:["Turku","Tampere","Oslo"]},
+{n:"Frankreich", c:"Paris", w:["Lyon","Marseille","Brüssel"]},
+{n:"Griechenland", c:"Athen", w:["Thessaloniki","Patras","Rom"]},
+{n:"Irland", c:"Dublin", w:["Cork","Galway","London"]},
+{n:"Island", c:"Reykjavík", w:["Akureyri","Oslo","Helsinki"]},
+{n:"Italien", c:"Rom", w:["Mailand","Neapel","Madrid"]},
+{n:"Kasachstan", c:"Astana", w:["Almaty","Taschkent","Bischkek"]},
+{n:"Kosovo", c:"Pristina", w:["Prizren","Skopje","Tirana"]},
+{n:"Kroatien", c:"Zagreb", w:["Split","Dubrovnik","Ljubljana"]},
+{n:"Lettland", c:"Riga", w:["Daugavpils","Vilnius","Tallinn"]},
+{n:"Liechtenstein", c:"Vaduz", w:["Schaan","Zürich","Innsbruck"]},
+{n:"Litauen", c:"Vilnius", w:["Kaunas","Riga","Minsk"]},
+{n:"Luxemburg", c:"Luxemburg", w:["Esch","Brüssel","Straßburg"]},
+{n:"Malta", c:"Valletta", w:["Sliema","Mdina","Rom"]},
+{n:"Moldau", c:"Chișinău", w:["Tiraspol","Bukarest","Kyjiw"]},
+{n:"Monaco", c:"Monaco", w:["Nizza","Marseille","Genua"]},
+{n:"Montenegro", c:"Podgorica", w:["Kotor","Belgrad","Sarajevo"]},
+{n:"Niederlande", c:"Amsterdam", w:["Rotterdam","Den Haag","Brüssel"]},
+{n:"Nordmazedonien", c:"Skopje", w:["Ohrid","Sofia","Belgrad"]},
+{n:"Norwegen", c:"Oslo", w:["Bergen","Trondheim","Stockholm"]},
+{n:"Österreich", c:"Wien", w:["Salzburg","Graz","Prag"]},
+{n:"Polen", c:"Warschau", w:["Krakau","Danzig","Budapest"]},
+{n:"Portugal", c:"Lissabon", w:["Porto","Faro","Madrid"]},
+{n:"Rumänien", c:"Bukarest", w:["Cluj","Iași","Sofia"]},
+{n:"Russland", c:"Moskau", w:["Sankt Petersburg","Kasan","Kyjiw"]},
+{n:"San Marino", c:"San Marino", w:["Rimini","Rom","Florenz"]},
+{n:"Schweden", c:"Stockholm", w:["Göteborg","Malmö","Oslo"]},
+{n:"Schweiz", c:"Bern", w:["Zürich","Genf","Wien"]},
+{n:"Serbien", c:"Belgrad", w:["Novi Sad","Sarajevo","Zagreb"]},
+{n:"Slowakei", c:"Bratislava", w:["Košice","Prag","Wien"]},
+{n:"Slowenien", c:"Ljubljana", w:["Maribor","Zagreb","Wien"]},
+{n:"Spanien", c:"Madrid", w:["Barcelona","Valencia","Lissabon"]},
+{n:"Tschechien", c:"Prag", w:["Brünn","Wien","Bratislava"]},
+{n:"Türkei", c:"Ankara", w:["Istanbul","Izmir","Athen"]},
+{n:"Ukraine", c:"Kyjiw", w:["Lwiw","Odessa","Minsk"]},
+{n:"Ungarn", c:"Budapest", w:["Debrecen","Wien","Bratislava"]},
+{n:"Vatikanstadt", c:"Vatikanstadt", w:["Rom","Florenz","San Marino"]},
+{n:"Vereinigtes Königreich", c:"London", w:["Manchester","Edinburgh","Dublin"]},
+{n:"Zypern", c:"Nikosia", w:["Limassol","Larnaka","Athen"]}
+];
+
+let current=0,score=0,streak=0;
+let highscore=localStorage.getItem("euHighscore")||0;
+document.getElementById("highscore").innerText=highscore;
+
+function loadQuestion(){
+    if(current>=countries.length){ endGame(); return; }
+
+    const country=countries[current];
+    document.getElementById("question").innerText=
+    "Was ist die Hauptstadt von "+country.n+"?";
+
+    document.getElementById("result").innerText="";
+
+    const options=[country.c,...country.w].sort(()=>Math.random()-0.5);
+    const answers=document.getElementById("answers");
+    answers.innerHTML="";
+
+    options.forEach(opt=>{
+        const btn=document.createElement("button");
+        btn.innerText=opt;
+        btn.onclick=()=>checkAnswer(btn,opt,country.c);
+        answers.appendChild(btn);
+    });
+}
+
+function checkAnswer(button,selected,correct){
+    const buttons=document.querySelectorAll(".answers button");
+    buttons.forEach(b=>b.disabled=true);
+
+    if(selected===correct){
+        button.classList.add("correct");
+        document.getElementById("result").innerText="✅ Richtig!";
+        streak++;
+        score+=10+(streak*2);
+    }else{
+        button.classList.add("wrong");
+        document.getElementById("result").innerText="❌ Falsch!";
+        streak=0;
+        buttons.forEach(b=>{
+            if(b.innerText===correct) b.classList.add("correct");
+        });
+    }
+
+    updateStats();
+
+    setTimeout(()=>{
+        current++;
+        loadQuestion();
+    },1500);
+}
+
+function updateStats(){
+    document.getElementById("score").innerText=score;
+    document.getElementById("streak").innerText=streak;
+}
+
+function endGame(){
+    document.getElementById("answers").innerHTML="";
+    document.getElementById("question").innerText="🎉 Spiel beendet!";
+    document.getElementById("result").innerText="";
+    document.querySelector(".restart").style.display="inline-block";
+
+    if(score>highscore){
+        localStorage.setItem("euHighscore",score);
+        document.getElementById("highscore").innerText=score;
+    }
+}
+
+function restart(){
+    current=0; score=0; streak=0;
+    document.querySelector(".restart").style.display="none";
+    countries.sort(()=>Math.random()-0.5);
+    updateStats();
+    loadQuestion();
+}
+
+function setMode(mode){
+    const game=document.getElementById("game");
+    if(mode==="mobile"){
+        game.classList.add("mobile");
+    }else{
+        game.classList.remove("mobile");
+    }
+}
+
+countries.sort(()=>Math.random()-0.5);
+loadQuestion();
+</script>
+
+</body>
+</html>
